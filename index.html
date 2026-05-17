@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>体重測定アプリ — 養豚場管理</title>
+<title>体重測定アプリ — 横山養豚</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -305,7 +305,7 @@
     gap: 10px;
   }
   .hitem-left { flex: 1; min-width: 0; }
-  .hitem-ear { font-size: 14px; font-weight: 700; color: var(--text); font-family: var(--mono); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .hitem-pen { font-size: 14px; font-weight: 700; color: var(--text); font-family: var(--mono); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .hitem-meta { font-size: 12px; color: var(--text3); margin-top: 3px; line-height: 1.6; }
   .hitem-weight { font-size: 24px; font-weight: 700; font-family: var(--mono); color: var(--text); white-space: nowrap; }
   .hitem-wunit { font-size: 12px; color: var(--text2); }
@@ -368,7 +368,7 @@
     <div class="header-top">
       <div>
         <h1>🐷 体重測定アプリ</h1>
-        <div class="header-sub">養豚場管理システム</div>
+        <div class="header-sub">横山養豚 管理システム</div>
       </div>
       <div class="record-count" id="rec-count">0件</div>
     </div>
@@ -384,8 +384,8 @@
   <div class="content" id="tab-input">
 
     <div class="fg">
-      <p class="slabel">耳刻（個体識別番号）</p>
-      <input type="text" id="ear-tag" placeholder="例: 0123456789" />
+      <p class="slabel">豚房</p>
+      <input type="text" id="pen-input" placeholder="例: A棟-1房" autocomplete="off" />
     </div>
 
     <div class="fg">
@@ -413,20 +413,6 @@
         <button class="gbtn" id="g-sow" onclick="setGender('雌', this)">♀ 雌</button>
         <button class="gbtn" id="g-barrow" onclick="setGender('去勢', this)">✂ 去勢</button>
       </div>
-    </div>
-
-    <div class="fg">
-      <p class="slabel">豚房</p>
-      <div class="select-wrap">
-        <select id="pen-select">
-          <option value="">選択してください</option>
-          <option>A棟-1房</option><option>A棟-2房</option><option>A棟-3房</option>
-          <option>B棟-1房</option><option>B棟-2房</option><option>B棟-3房</option>
-          <option>C棟-1房</option><option>C棟-2房</option><option>C棟-3房</option>
-          <option value="custom">その他（手入力）</option>
-        </select>
-      </div>
-      <input type="text" id="pen-custom" placeholder="豚房名を入力" style="display:none; margin-top:6px;" />
     </div>
 
     <div class="fg">
@@ -526,7 +512,6 @@
     const minDate = new Date(today.getFullYear(), today.getMonth() - 8, today.getDate());
     const maxDate = new Date(today.getFullYear(), today.getMonth() - 4, today.getDate());
 
-    // 年月の範囲を収集
     const months = [];
     let cur = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
     const end = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
@@ -535,12 +520,10 @@
       cur.setMonth(cur.getMonth() + 1);
     }
 
-    // 年セレクト
     const years = [...new Set(months.map(x => x.y))];
     const selY = document.getElementById('dob-y');
     years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; selY.appendChild(o); });
 
-    // 月セレクト（年に連動）
     function updateMonths() {
       const y = parseInt(selY.value);
       const selM = document.getElementById('dob-m');
@@ -556,7 +539,6 @@
       updateDays();
     }
 
-    // 日セレクト（年月に連動）
     function updateDays() {
       const y = parseInt(selY.value);
       const m = parseInt(document.getElementById('dob-m').value);
@@ -580,22 +562,15 @@
     selY.addEventListener('change', updateMonths);
     document.getElementById('dob-m').addEventListener('change', updateDays);
 
-    // 初期値：最新の年月を選択
     if (years.length > 0) {
       selY.value = years[years.length - 1];
       updateMonths();
-      // 最新月を選択
       const selM = document.getElementById('dob-m');
       if (selM.options.length > 1) selM.value = selM.options[selM.options.length - 1].value;
       updateDays();
     }
   }
   initDOB();
-
-  // Pen select
-  document.getElementById('pen-select').addEventListener('change', function() {
-    document.getElementById('pen-custom').style.display = this.value === 'custom' ? 'block' : 'none';
-  });
 
   function setGender(g, el) {
     selectedGender = g;
@@ -633,12 +608,6 @@
     return Math.floor((base - new Date(y, m-1, d)) / 86400000);
   }
 
-  function getPen() {
-    const sel = document.getElementById('pen-select').value;
-    if (sel === 'custom') return document.getElementById('pen-custom').value.trim();
-    return sel;
-  }
-
   function showToast(msg) {
     const el = document.getElementById('toast');
     el.textContent = msg;
@@ -647,13 +616,12 @@
   }
 
   function saveRecord() {
-    const ear = document.getElementById('ear-tag').value.trim();
+    const pen = document.getElementById('pen-input').value.trim();
     const dob = getDOB();
-    const pen = getPen();
     const wt = parseFloat(weightStr);
-    if (!ear) { showToast('⚠ 耳刻を入力してください'); return; }
+
+    if (!pen) { showToast('⚠ 豚房を入力してください'); return; }
     if (!dob) { showToast('⚠ 生年月日を入力してください'); return; }
-    if (!pen) { showToast('⚠ 豚房を選択してください'); return; }
     if (!weightStr || isNaN(wt)) { showToast('⚠ 体重を入力してください'); return; }
 
     const measureVal = document.getElementById('measure-date').value;
@@ -663,22 +631,18 @@
     const age = calcAge(dob, measureVal);
     const dg = age > 0 ? wt * 1000 / age : null;
 
-    records.unshift({ ear, dob, pen, weight: wt, gender: selectedGender, date: dateStr, age, dg });
+    records.unshift({ pen, dob, weight: wt, gender: selectedGender, date: dateStr, age, dg });
     updateCount();
     renderHistory();
     showToast('✓ 記録しました');
 
-    // Reset
+    // Reset（豚房は引き継ぐ）
     weightStr = '';
     document.getElementById('wdisp').textContent = '—';
     document.getElementById('wunit').style.display = 'none';
-    document.getElementById('ear-tag').value = '';
     document.getElementById('dob-y').value = '';
     document.getElementById('dob-m').value = '';
     document.getElementById('dob-d').value = '';
-    document.getElementById('pen-select').value = '';
-    document.getElementById('pen-custom').style.display = 'none';
-    document.getElementById('pen-custom').value = '';
     document.getElementById('measure-date').value = today_str();
     selectedGender = '雄';
     document.querySelectorAll('.gbtn').forEach(b => b.classList.remove('active'));
@@ -717,8 +681,8 @@
         : '';
       return `<div class="hitem">
         <div class="hitem-left">
-          <div class="hitem-ear">${r.ear} ${dgBadge}</div>
-          <div class="hitem-meta">${r.pen} · ${r.gender} · ${r.age}日齢 · ${r.dob}<br>${r.date}</div>
+          <div class="hitem-pen">${r.pen} ${dgBadge}</div>
+          <div class="hitem-meta">${r.gender} · ${r.age}日齢 · ${r.dob}<br>${r.date}</div>
         </div>
         <div style="text-align:right;">
           <div class="hitem-weight">${r.weight.toFixed(1)}</div>
@@ -731,19 +695,18 @@
   function exportExcel() {
     if (records.length === 0) { showToast('⚠ 記録がありません'); return; }
     const data = [
-      ['測定日時', '耳刻', '生年月日', '日齢（日）', '豚房', '性別', '体重（kg）', 'DG（g/日）']
+      ['測定日', '豚房', '生年月日', '日齢（日）', '性別', '体重（kg）', 'DG（g/日）']
     ];
     records.forEach(r => {
       data.push([
-        r.date, r.ear, r.dob, r.age, r.pen, r.gender,
+        r.date, r.pen, r.dob, r.age, r.gender,
         parseFloat(r.weight.toFixed(1)),
         r.dg !== null ? Math.round(r.dg) : ''
       ]);
     });
     const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{wch:18},{wch:14},{wch:12},{wch:10},{wch:12},{wch:6},{wch:12},{wch:12}];
+    ws['!cols'] = [{wch:14},{wch:14},{wch:12},{wch:10},{wch:6},{wch:12},{wch:12}];
 
-    // Style header row
     const range = XLSX.utils.decode_range(ws['!ref']);
     for (let C = range.s.c; C <= range.e.c; C++) {
       const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
@@ -755,7 +718,7 @@
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '体重記録');
     const today = new Date();
-    const fname = `体重記録_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
+    const fname = `横山養豚_体重記録_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
     XLSX.writeFile(wb, fname);
     showToast('✓ Excelをダウンロードしました');
   }
