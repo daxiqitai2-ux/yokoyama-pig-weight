@@ -476,7 +476,7 @@
   // ========== KV API ==========
   async function loadRecords() {
     try {
-      const res = await fetch(`${API_BASE}/kv/get?key=${encodeURIComponent(KV_KEY)}`);
+      const res = await fetch(`${API_BASE}/api/get?key=${encodeURIComponent(KV_KEY)}`);
       if (!res.ok) throw new Error('通信エラー');
       const data = await res.json();
       records = data.value ? JSON.parse(data.value) : [];
@@ -489,7 +489,7 @@
   }
 
   async function saveToKV() {
-    const res = await fetch(`${API_BASE}/kv/put`, {
+    const res = await fetch(`${API_BASE}/api/set`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key: KV_KEY, value: JSON.stringify(records) })
